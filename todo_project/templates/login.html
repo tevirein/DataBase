@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | ToDo List App</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 400px; margin: 50px auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; text-align: center; margin-bottom: 30px; }
+        /* Flaskからのメッセージ（エラーや成功通知）のスタイル */
+        .flash { padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; }
+        .flash.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash.message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        /* フォーム入力欄のスタイル */
+        .auth-form input { 
+            width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;
+        }
+        /* ボタンのスタイル */
+        .auth-form button { 
+            width: 100%; padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.3s;
+        }
+        .auth-form button:hover { background-color: #0056b3; }
+        p { text-align: center; margin-top: 20px; }
+        p a { color: #007bff; text-decoration: none; }
+        p a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ログイン</h1>
+        
+        <!-- Flaskの flash メッセージを表示するためのJinja2構文 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- ログインフォーム -->
+        <form class="auth-form" method="POST" action="{{ url_for('login') }}">
+            <input type="text" name="username" placeholder="ユーザー名" required>
+            <input type="password" name="password" placeholder="パスワード" required>
+            <button type="submit">ログイン</button>
+        </form>
+        
+        <p>アカウントをお持ちでない場合は <a href="{{ url_for('register') }}">新規登録</a></p>
+    </div>
+</body>
+</html>

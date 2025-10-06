@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} | ToDo List App</title>
+    <style>
+        /* index.html 用のスタイル */
+        body { font-family: 'Arial', sans-serif; background-color: #f4f7f9; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; text-align: center; margin-bottom: 30px; }
+        
+        /* ナビゲーションとFlashメッセージのスタイル */
+        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .nav a { text-decoration: none; color: #007bff; margin-left: 15px; }
+        .nav a:hover { text-decoration: underline; }
+        .flash { padding: 10px; border-radius: 6px; margin-bottom: 15px; font-weight: bold; }
+        .flash.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash.message { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+
+        /* フォームの共通スタイル */
+        .search-form { display: flex; margin-bottom: 20px; }
+        .search-form input[type="text"] { flex-grow: 1; padding: 10px; border: 2px solid #ddd; border-radius: 6px 0 0 6px; font-size: 16px; }
+        .search-form button { padding: 10px 15px; background-color: #6c757d; color: white; border: none; border-radius: 0 6px 6px 0; cursor: pointer; transition: background-color 0.3s; }
+
+        .add-form, .edit-form-inner { display: flex; flex-direction: column; gap: 10px; padding: 15px; border-radius: 8px; background-color: #f9f9f9; }
+        .add-form-row { display: flex; gap: 10px; }
+        .add-form-row input[type="text"] { flex-grow: 3; }
+        .add-form-row input[type="date"], .add-form-row select { flex-grow: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+        .add-form button { padding: 10px 15px; background-color: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.3s; }
+        
+        /* リストのスタイル */
+        ul { list-style: none; padding: 0; }
+        li { background: #fff; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 5px solid #007bff; }
+        li.done-task { background: #cce5ff; border-left: 5px solid #6c757d; }
+        .task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .task-title-display { flex-grow: 1; font-weight: bold; font-size: 1.1em; }
+        .task-title-display.done { text-decoration: line-through; color: #6c757d; }
+        
+        /* メタ情報（優先度、期限）のスタイル */
+        .task-meta span { font-size: 0.9em; margin-right: 15px; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-top: 5px; }
+        .priority-1 { background-color: #dc3545; color: white; } 
+        .priority-2 { background-color: #ffc107; color: #333; }
+        .priority-3 { background-color: #28a745; color: white; } 
+        .due-date { background-color: #007bff; color: white; }
+        
+        /* アクションボタンのスタイル */
+        .actions { white-space: nowrap; }
+        .actions a, .actions button, .actions summary { 
+            text-decoration: none; color: white; padding: 5px 10px; border-radius: 4px; margin-left: 8px; font-size: 14px; cursor: pointer; border: none; transition: opacity 0.3s; display: inline-block;
+        }
+        .toggle-done-btn { background-color: #007bff; }
+        .edit-btn { background-color: #ffc107; color: #333; }
+        .delete-btn { background-color: #dc3545; }
+        .save-btn { background-color: #28a745; color: white; }
+        .toggle-done-btn:hover, .edit-btn:hover, .delete-btn:hover, .save-btn:hover { opacity: 0.8; }
+
+        /* 編集フォームのトグル */
+        details { border: 1px solid #ddd; border-radius: 6px; margin-top: 10px; background-color: #f7f7f7; }
+        summary { padding: 10px; cursor: pointer; background-color: #eee; border-radius: 6px; }
+        summary:hover { background-color: #e0e0e0; }
+        .edit-form-inner { border: none; padding: 10px; margin-top: 0; }
+        .edit-form-inner input, .edit-form-inner select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Flash Message表示エリア -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="nav">
+            <!-- current_user は app.py のロジックから渡される（Flask-Login） -->
+            <span>ようこそ, **{{ current_user.username }}** さん</span>
+            <div>
+                <!-- url_for は app.py で定義されたルーティングを参照 -->
+                <a href="{{ url_for('index') }}">ToDoリスト</a>
+                <a href="{{ url_for('logout') }}">ログアウト</a>
+            </div>
+        </div>
+        
+        <h1>ToDo リスト ({{ current_user.username }} のタスク)</h1>
+
+        <!-- タスク検索フォーム -->
+        <form class="search-form" action="{{ url_for('index') }}" method="GET">
+            <!-- current_query は app.py から渡される -->
+            <input type="text" name="q" placeholder="キーワード検索..." value="{{ current_query }}">
+            <button type="submit">検索</button>
+        </form>
+
+        <!-- タスク追加フォーム -->
+        <details style="margin-bottom: 20px;">
+            <summary style="background-color: #28a745; color: white; border: none; font-weight: bold;">＋ 新しいタスクを追加</summary>
+            <form class="add-form" action="{{ url_for('add') }}" method="post" style="margin-top: 10px;">
+                <div class="add-form-row">
+                    <input type="text" name="title" placeholder="タスク名を入力..." required>
+                    <select name="priority">
+                        <option value="3">優先度: 低</option>
+                        <option value="2">優先度: 中</option>
+                        <option value="1">優先度: 高</option>
+                    </select>
+                    <input type="date" name="due_date" title="期限日">
+                </div>
+                <button type="submit">タスク追加</button>
+            </form>
+        </details>
+
+        <!-- タスク一覧 -->
+        <ul>
+        {% for task in tasks %}
+            <li class="{% if task.done %}done-task{% else %}priority-{{ task.priority }}{% endif %}">
+                <div class="task-header">
+                    <div class="task-title-display {% if task.done %}done{% endif %}">
+                        {{ task.title }}
+                        
+                        <div class="task-meta">
+                            {% set priority_map = {1: '高', 2: '中', 3: '低'} %}
+                            <span class="priority-{{ task.priority }}">P: {{ priority_map[task.priority] }}</span>
+                            {% if task.due_date %}
+                                <span class="due-date">期限: {{ task.due_date.strftime('%Y/%m/%d') }}</span>
+                            {% else %}
+                                <span style="background: #ccc; color: #333;">期限なし</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="actions">
+                        <a href="{{ url_for('done', id=task.id) }}" class="toggle-done-btn">{{ '未完了に戻す' if task.done else '完了' }}</a>
+                        
+                        <!-- 編集フォームの表示切り替え -->
+                        <details style="display: inline-block;">
+                            <summary class="edit-btn">編集</summary>
+                            
+                            <!-- 編集フォーム -->
+                            <form class="edit-form-inner" action="{{ url_for('update', id=task.id) }}" method="post" style="flex-direction: row;">
+                                <input type="text" name="title" value="{{ task.title }}" required>
+
+                                <select name="priority">
+                                    <option value="1" {% if task.priority == 1 %}selected{% endif %}>高</option>
+                                    <option value="2" {% if task.priority == 2 %}selected{% endif %}>中</option>
+                                    <option value="3" {% if task.priority == 3 %}selected{% endif %}>低</option>
+                                </select>
+                                
+                                <input type="date" name="due_date" value="{{ task.due_date.strftime('%Y-%m-%d') if task.due_date else '' }}">
+                                
+                                <button type="submit" class="save-btn">保存</button>
+                            </form>
+                        </details>
+
+                        <a href="{{ url_for('delete', id=task.id) }}" class="delete-btn">削除</a>
+                    </div>
+                </div>
+            </li>
+        {% else %}
+            <p style="text-align: center; color: #6c757d;">タスクはまだありません{% if current_query %}。検索条件に合うタスクが見つかりませんでした。{% endif %}</p>
+        {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
