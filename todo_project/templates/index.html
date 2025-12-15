@@ -76,7 +76,7 @@
 
         <div class="nav">
             <!-- current_user は app.py のロジックから渡される（Flask-Login） -->
-            <span>ようこそ, **{{ current_user.username }}** さん</span>
+            <span>ようこそ, <strong>{{ current_user.username }}</strong> さん</span>
             <div>
                 <!-- url_for は app.py で定義されたルーティングを参照 -->
                 <a href="{{ url_for('index') }}">ToDoリスト</a>
